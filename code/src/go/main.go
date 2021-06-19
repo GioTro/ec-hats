@@ -11,25 +11,12 @@ type params struct {
 	tau, delta_t, time_window float64
 }
 
-func signal_global(wg *sync.WaitGroup, ch chan *[]float64) {
-	defer close(ch)
-	wg.Wait()
-}
-
 func batch_process(ev *[][]event, par *params, ch chan *[]float64, wg *sync.WaitGroup) {
-	// const batch_size = 10
-	//start := time.Now()
-	//var wg sync.WaitGroup
-	//var count int
-	//wg.Add(len(*ev))
-	// var i interface{} = idx
+	defer close(ch)
 	for _, e := range *ev {
 		go process_all(e, *par, ch, wg)
-		//count++
 	}
-	//wg.Wait()
-	//stop := float64(time.Since(start).Milliseconds())
-	//fmt.Println("Average", stop/float64(count), "ms") // 1.3ms per example
+	wg.Wait()
 }
 
 // func init() {
@@ -57,17 +44,15 @@ func main() {
 	data := load_data(all_files[0])
 
 	ev := process_buffer(data)
+	// fmt.Println("I'm here")
 
-	fmt.Println("I'm here")
 	hst := make([][]float64, len(ev))
 
 	var ch = make(chan *[]float64)
 
 	var wg sync.WaitGroup
 	wg.Add(len(hst))
-	// wgg.Add(1)
-	go signal_global(&wg, ch)
-	//var count int
+
 	go batch_process(&ev, &par, ch, &wg)
 
 	count := 0
@@ -76,16 +61,6 @@ func main() {
 	for p := range ch {
 		hst[count] = *p
 		count++
-		//var max float64
-		// for _, n := range hst[count] {
-		// 	if n > max {
-		// 		max = n
-		// 	}
-		//}
-		// if count%100 == 0 {
-		// 	fmt.Println(len(hst) - count)
-		// }
-		//fmt.Println(max)
 	}
 	done := time.Since(start).Seconds()
 	fmt.Println(done)

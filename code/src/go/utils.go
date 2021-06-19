@@ -73,9 +73,9 @@ func load_files(filename string) map[int][]string {
 // bit 22 - 0: Timestamp (in microseconds)
 // The videos below show the conversion process in action and some of the resulting recordings.
 
-func process_single(raw []byte) []event {
+func process_single(buffer []byte) []event {
 	// This is taken from Gochard website, translated from the python file.
-	// Adapted (a la less pythonic)
+	// Adapted, closer to linear, original was reading buffer mltpl times.
 	x_address := ((1 << 8) - 1) << 32
 	y_address := ((1 << 8) - 1) << 24
 	p_address := (1 << 23)
@@ -86,20 +86,10 @@ func process_single(raw []byte) []event {
 	var idx = 0
 	var time_increment = (1 << 13)
 	var multiple = 0
-	// var max_y = 0
-	// var max_x = 0
 
-	// var max = func(a, b int) int {
-	// 	if a < b {
-	// 		return b
-	// 	} else {
-	// 		return a
-	// 	}
-	// }
-
-	for idx < len(raw) {
+	for idx < len(buffer) {
 		var bits int
-		chunk := raw[idx:(idx + 5)]
+		chunk := buffer[idx:(idx + 5)]
 		for _, c := range chunk {
 			bits |= int(c)
 			bits <<= 8
@@ -118,9 +108,6 @@ func process_single(raw []byte) []event {
 			idx += 5
 			continue
 		}
-		// max_x = max(max_x, x)
-		// max_y = max(max_y, y)
-		// offset overflow
 		t += multiple * time_increment
 
 		var e = event{
@@ -138,8 +125,8 @@ func process_single(raw []byte) []event {
 
 func process_buffer(buffer [][]byte) (es_array [][]event) {
 	es_array = make([][]event, len(buffer))
-	for idx, b := range buffer {
-		es_array[idx] = process_single(b)
+	for idx, bfr := range buffer {
+		es_array[idx] = process_single(bfr)
 	}
 	return es_array
 }

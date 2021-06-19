@@ -12,6 +12,8 @@ import (
 * Would be nice to avoid 4d
 * I should be able to exploit the sparse nature of the data
 *
+* Vet the types 64 bit int/float not always necessairy,
+* at the moment full dataset would be around 20gb in RAM
  */
 
 type ha_array [][][][]float64
@@ -143,9 +145,7 @@ func process(e event, prm *params, ds *histogram) {
 func process_all(es []event, prm params, ch chan *[]float64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var ds = init_datastructure(&prm)
-	//var count = 0
 	for _, e := range es {
-		//count++
 		process(e, &prm, &ds)
 	}
 	ch <- normalize(&ds)
