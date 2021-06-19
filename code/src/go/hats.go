@@ -5,17 +5,17 @@ import (
 	"sync"
 )
 
-type tuple struct{ x, y int }
+// type tuple struct{ x, y int }
+
+/**
+* The ha_array is causing some trouble
+* Would be nice to avoid 4d
+* I should be able to exploit the sparse nature of the data
+*
+ */
 
 type ha_array [][][][]float64
 
-/***
-*	It's the ha_array that is a bit stupid
-* 	Using the fact that we have sparse data
-* 	and use a different datastructure and
-* 	just padd it instead would be an option
-*	I only care about the indicies.
- */
 type histogram struct {
 	n_cells, width, height, dim int
 	data                        *ha_array
@@ -72,11 +72,7 @@ func normalize(ds *histogram) *[]float64 {
 	var evc = (*ds).evc
 	var count int
 
-	// This I want to dissappear
-	// Better datastructure to begin with
-	// go routines bring overhead here.
-	// Maybe maybe no, I always have the pointer
-	// don't care when it finishes as long as the reference is intact
+	// Make this dissappear, better dstructure?
 	for i := range *hst {
 		for j := range (*hst)[i] {
 			for z := range (*hst)[i][j] {
@@ -97,7 +93,7 @@ func compute_time_surface(e event, mce *[]event, prm *params) *[][]float64 {
 	tau = float64(tau)
 	var time_surface [][]float64 = make([][]float64, 2*R+1)
 	// Tried a map but this is faster
-	for idx, _ := range time_surface {
+	for idx := range time_surface {
 		time_surface[idx] = make([]float64, 2*R+1)
 	}
 
@@ -144,17 +140,13 @@ func process(e event, prm *params, ds *histogram) {
 	multiply(&((*(*ds).data)[e.p][idx]), time_surface)
 }
 
-func process_all(es []event, prm params, ch chan *[]float64, wg *sync.WaitGroup, wgg *sync.WaitGroup) {
-
+func process_all(es []event, prm params, ch chan *[]float64, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var ds = init_datastructure(&prm)
-	var count = 0
+	//var count = 0
 	for _, e := range es {
-		count++
+		//count++
 		process(e, &prm, &ds)
 	}
-
 	ch <- normalize(&ds)
-
-	wgg.Done()
-	wg.Done()
 }

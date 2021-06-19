@@ -28,29 +28,9 @@ func construct4darr(x, y, z int) ha_array {
 	return out
 }
 
-func construct2darr(x, y int) [][]int {
-	out := make([][]int, x)
-	for xx := range out {
-		out[xx] = make([]int, y)
-	}
-	return out
-}
-
 func load_data(fnames []string) [][]byte {
 	buffer := make([][]byte, len(fnames))
 	for idx, name := range fnames {
-		// fp, err := os.Open(name)
-		// if err != nil {
-		// panic(err)
-		// }
-		// defer fp.Close()
-
-		// f, err := fp.Stat()
-		// if err != nil {
-		// panic(err)
-		// }
-
-		//data := make([]byte, f.Size())
 		data, err := ioutil.ReadFile(name)
 		if err != nil {
 			panic(err)
@@ -87,12 +67,6 @@ func load_files(filename string) map[int][]string {
 	return all_files
 }
 
-// A readme and example Matlab function for reading the files is included in the download.
-
-// Further Matlab and Python code for reading and working with the datasets is available on the code page.
-
-// Each example is a separate binary file consisting of a list of events. Each event occupies 40 bits as described below:
-
 // bit 39 - 32: Xaddress (in pixels)
 // bit 31 - 24: Yaddress (in pixels)
 // bit 23: Polarity (0 for OFF, 1 for ON)
@@ -101,6 +75,7 @@ func load_files(filename string) map[int][]string {
 
 func process_single(raw []byte) []event {
 	// This is taken from Gochard website, translated from the python file.
+	// Adapted (a la less pythonic)
 	x_address := ((1 << 8) - 1) << 32
 	y_address := ((1 << 8) - 1) << 24
 	p_address := (1 << 23)
@@ -111,16 +86,16 @@ func process_single(raw []byte) []event {
 	var idx = 0
 	var time_increment = (1 << 13)
 	var multiple = 0
-	var max_y = 0
-	var max_x = 0
+	// var max_y = 0
+	// var max_x = 0
 
-	var max = func(a, b int) int {
-		if a < b {
-			return b
-		} else {
-			return a
-		}
-	}
+	// var max = func(a, b int) int {
+	// 	if a < b {
+	// 		return b
+	// 	} else {
+	// 		return a
+	// 	}
+	// }
 
 	for idx < len(raw) {
 		var bits int
@@ -143,8 +118,8 @@ func process_single(raw []byte) []event {
 			idx += 5
 			continue
 		}
-		max_x = max(max_x, x)
-		max_y = max(max_y, y)
+		// max_x = max(max_x, x)
+		// max_y = max(max_y, y)
 		// offset overflow
 		t += multiple * time_increment
 
@@ -152,7 +127,7 @@ func process_single(raw []byte) []event {
 			x: x,
 			y: y,
 			p: p,
-			t: float64(t) * 1e-6,
+			t: float64(t) * 1e-3,
 		}
 
 		es = append(es, e)

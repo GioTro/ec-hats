@@ -12,38 +12,35 @@ type params struct {
 }
 
 func signal_global(wg *sync.WaitGroup, ch chan *[]float64) {
-	wg.Wait()
-
-	fmt.Println("Not closed waiting")
 	defer close(ch)
-	fmt.Println("Closed")
+	wg.Wait()
 }
 
-func batch_process(ev *[][]event, par *params, ch chan *[]float64, wgg *sync.WaitGroup) {
-	idx := 0
-	const batch_size = 5
-	var wg sync.WaitGroup
-	var count int
-
+func batch_process(ev *[][]event, par *params, ch chan *[]float64, wg *sync.WaitGroup) {
+	// const batch_size = 10
+	//start := time.Now()
+	//var wg sync.WaitGroup
+	//var count int
+	//wg.Add(len(*ev))
 	// var i interface{} = idx
-	start := time.Now()
 	for _, e := range *ev {
-		wg.Add(1)
-		go process_all(e, *par, ch, &wg, wgg)
-		wg.Wait()
-		if idx > batch_size {
-			wg.Wait()
-			idx = 0
-		}
-		idx++
-		count++
+		go process_all(e, *par, ch, wg)
+		//count++
 	}
-	stop := float64(time.Since(start).Microseconds())
-	fmt.Println("Average", stop/float64(count), "micro-seconds")
+	//wg.Wait()
+	//stop := float64(time.Since(start).Milliseconds())
+	//fmt.Println("Average", stop/float64(count), "ms") // 1.3ms per example
 }
+
+// func init() {
+// 	numcpu := runtime.NumCPU()
+// 	fmt.Println(numcpu)
+// 	runtime.GOMAXPROCS(numcpu)
+// }
 
 func main() {
-	// For mnist width height = 35, (R, K = 7 is good), (tau ~ 1/2, delta_t ~.1, time_window depends on units.)
+	// For mnist width height = 35, (R, K = 7 is good), (tau ~ 1/2, delta_t ~.1, time_window depend on the unit)
+	// This is a bit messy
 	filename := "../../dataset/train/"
 
 	var par = params{
@@ -53,7 +50,7 @@ func main() {
 		height:      35,
 		tau:         .5,
 		delta_t:     .1,
-		time_window: .1,
+		time_window: 1,
 	}
 
 	all_files := load_files(filename)
@@ -66,28 +63,28 @@ func main() {
 
 	var ch = make(chan *[]float64)
 
-	var wgg sync.WaitGroup
-	wgg.Add(len(hst))
+	var wg sync.WaitGroup
+	wg.Add(len(hst))
 	// wgg.Add(1)
-	go signal_global(&wgg, ch)
+	go signal_global(&wg, ch)
 	//var count int
-	go batch_process(&ev, &par, ch, &wgg)
+	go batch_process(&ev, &par, ch, &wg)
 
 	count := 0
 	start := time.Now()
 	//time.Sleep(20 * time.Millisecond)
 	for p := range ch {
 		hst[count] = *p
-		var max float64
-		for _, n := range hst[count] {
-			if n > max {
-				max = n
-			}
-		}
 		count++
-		if count%100 == 0 {
-			fmt.Println(len(hst) - count)
-		}
+		//var max float64
+		// for _, n := range hst[count] {
+		// 	if n > max {
+		// 		max = n
+		// 	}
+		//}
+		// if count%100 == 0 {
+		// 	fmt.Println(len(hst) - count)
+		// }
 		//fmt.Println(max)
 	}
 	done := time.Since(start).Seconds()
