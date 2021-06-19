@@ -1,27 +1,25 @@
 package main
 
 import (
-	//"fmt"
 	"fmt"
 	"io/ioutil"
 	"path"
-	//"log"
 )
 
 type event struct {
-	x, y int
-	t    float64
-	p    int // 0 or 1
+	x, y int8
+	t    float32
+	p    int8 // 0 or 1
 }
 
 func construct4darr(x, y, z int) ha_array {
 	out := make(ha_array, 2)
 	for pp := range out {
-		out[pp] = make([][][]float64, x)
+		out[pp] = make([][][]float32, x)
 		for xx := range out[pp] {
-			out[pp][xx] = make([][]float64, y)
+			out[pp][xx] = make([][]float32, y)
 			for yy := range out[pp][xx] {
-				out[pp][xx][yy] = make([]float64, z)
+				out[pp][xx][yy] = make([]float32, z)
 			}
 		}
 	}
@@ -67,15 +65,18 @@ func load_files(filename string) map[int][]string {
 	return all_files
 }
 
-// bit 39 - 32: Xaddress (in pixels)
-// bit 31 - 24: Yaddress (in pixels)
-// bit 23: Polarity (0 for OFF, 1 for ON)
-// bit 22 - 0: Timestamp (in microseconds)
-// The videos below show the conversion process in action and some of the resulting recordings.
-
 func process_single(buffer []byte) []event {
-	// This is taken from Gochard website, translated from the python file.
-	// Adapted, closer to linear, original was reading buffer mltpl times.
+	/**
+	* Structure:
+	* bit 39 - 32: Xaddress (in pixels)
+	* bit 31 - 24: Yaddress (in pixels)
+	* bit 23: Polarity (0 for OFF, 1 for ON)
+	* bit 22 - 0: Timestamp (in microseconds)
+	*
+	* Taken from Gochard's website, adapted from python.
+	* Made it less for-loopy
+	**/
+
 	x_address := ((1 << 8) - 1) << 32
 	y_address := ((1 << 8) - 1) << 24
 	p_address := (1 << 23)
@@ -83,13 +84,20 @@ func process_single(buffer []byte) []event {
 
 	var es = make([]event, 0)
 
-	var idx = 0
-	var time_increment = (1 << 13)
-	var multiple = 0
+	const time_increment = (1 << 13)
+	const n_bytes = 5
 
-	for idx < len(buffer) {
+	// Select time unit:
+	// 1e-3 gives ms
+	// 1e-6 gives s
+	const unit_conv = 1e-3
+
+	var offset int
+	var multiple int
+
+	for offset < len(buffer) {
 		var bits int
-		chunk := buffer[idx:(idx + 5)]
+		chunk := buffer[offset:(offset + n_bytes)]
 		for _, c := range chunk {
 			bits |= int(c)
 			bits <<= 8
@@ -105,20 +113,20 @@ func process_single(buffer []byte) []event {
 			// skip overflow
 			// corrupted data
 			multiple++
-			idx += 5
+			offset += n_bytes
 			continue
 		}
 		t += multiple * time_increment
 
 		var e = event{
-			x: x,
-			y: y,
-			p: p,
-			t: float64(t) * 1e-3,
+			x: int8(x),
+			y: int8(y),
+			p: int8(p),
+			t: float32(t) * unit_conv,
 		}
 
 		es = append(es, e)
-		idx += 5
+		offset += n_bytes
 	}
 	return es
 }

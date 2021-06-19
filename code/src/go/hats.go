@@ -5,18 +5,7 @@ import (
 	"sync"
 )
 
-// type tuple struct{ x, y int }
-
-/**
-* The ha_array is causing some trouble
-* Would be nice to avoid 4d
-* I should be able to exploit the sparse nature of the data
-*
-* Vet the types 64 bit int/float not always necessairy,
-* at the moment full dataset would be around 20gb in RAM
- */
-
-type ha_array [][][][]float64
+type ha_array [][][][]float32
 
 type histogram struct {
 	n_cells, width, height, dim int
@@ -68,8 +57,8 @@ func cell_idx(width, height, K int) (out [][]int) {
 	return arr
 }
 
-func normalize(ds *histogram) *[]float64 {
-	var vector = make([]float64, ds.dim)
+func normalize(ds *histogram) []float32 {
+	var vector = make([]float32, ds.dim)
 	var hst = (*ds).data
 	var evc = (*ds).evc
 	var count int
@@ -79,43 +68,29 @@ func normalize(ds *histogram) *[]float64 {
 		for j := range (*hst)[i] {
 			for z := range (*hst)[i][j] {
 				for k := range (*hst)[i][j][z] {
-					vector[count] = (*hst)[i][j][z][k] / (float64((*evc)[i][j]) + 1e-9)
+					vector[count] = (*hst)[i][j][z][k] / (float32((*evc)[i][j]) + 1e-9)
 					count++
 				}
 			}
 		}
 	}
-	ds = nil
-	return &vector
+	return vector
 }
 
-func compute_time_surface(e event, mce *[]event, prm *params) *[][]float64 {
-	var R = (*prm).R
-	var tau = (*prm).tau
-	tau = float64(tau)
-	var time_surface [][]float64 = make([][]float64, 2*R+1)
-	// Tried a map but this is faster
-	for idx := range time_surface {
-		time_surface[idx] = make([]float64, 2*R+1)
-	}
+func compute_time_surface(e event, mce *[]event, prm *params, hst *[][]float32) {
+	/** This version computes the cum sum for the histogram instead of the time surface,
+	The histogram gets normalized later. This order of operation gives a substantial speed up */
+	var R = int8((*prm).R)
+	var tau = float64((*prm).tau)
 
 	for _, e_i := range *mce {
-		var delta_t = e.t - e_i.t
+		var delta_t = float64(e.t - e_i.t)
 		var num = math.Exp(-delta_t / tau)
 
 		// center
 		var y_shift = e_i.y - (e.y - R)
 		var x_shift = e_i.x - (e.x - R)
-		time_surface[y_shift][x_shift] += num
-	}
-	return &time_surface
-}
-
-func multiply(h *[][]float64, ts *[][]float64) {
-	for i := range *h {
-		for j := range (*h)[i] {
-			((*h)[i][j]) += ((*ts)[i][j])
-		}
+		(*hst)[y_shift][x_shift] += float32(num)
 	}
 }
 
@@ -138,15 +113,15 @@ func process(e event, prm *params, ds *histogram) {
 		i++
 	}
 	*mce = (*mce)[i:]
-	var time_surface = compute_time_surface(e, mce, prm)
-	multiply(&((*(*ds).data)[e.p][idx]), time_surface)
+	compute_time_surface(e, mce, prm, &((*(*ds).data)[e.p][idx]))
 }
 
-func process_all(es []event, prm params, ch chan *[]float64, wg *sync.WaitGroup) {
+func process_all(es []event, prm params, ch chan []float32, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var ds = init_datastructure(&prm)
 	for _, e := range es {
 		process(e, &prm, &ds)
 	}
-	ch <- normalize(&ds)
+	var out = normalize(&ds)
+	ch <- out
 }
