@@ -9,15 +9,12 @@ std::vector<float> normalize(hats *ds) {
     std::vector<float> out;
     int idx = 0;
 
-    for (int i = 0; i < sizeof((*ds).data); i++ ) {
-        for (int j = 0; j < (*ds).data[i].size(); j++) {
-            for (int z = 0; z < (*ds).data[i][j].size(); z++) {
+    for (int i = 0; i < sizeof((*ds).data); i++ )
+        for (int j = 0; j < (*ds).data[i].size(); j++)
+            for (int z = 0; z < (*ds).data[i][j].size(); z++)
                 for (int k = 0; k < (*ds).data[i][j][z].size(); k++) {
                     out[idx] = (*ds).data[i][j][z][k] / ((float) (*ds).evc[i][j] + FLT_MIN);
                     idx++;
-                }
-            }
-        }
     }
     return out;
 }
@@ -42,7 +39,7 @@ void process_event(event e, params *p, hats *ds) {
     for (int i = 0; i < (*mce).size(); i++)
         if ((*mce)[i].t >= bp)
             h.push_back((*mce)[i]);
-    
+
     (*mce) = h;
 
     time_surface(e, p, mce, &(*ds).data[e.p][idx]);
@@ -51,8 +48,8 @@ void process_event(event e, params *p, hats *ds) {
 std::vector<float> process(stream es, params *p) {
     hats ds = make_hats(p, (*p).idx);
 
-    for (auto e = begin(es); e < end(es); e++) {
+    for (auto e = begin(es); e < end(es); e++)
         process_event(*e, p, &ds);
-    }
+
     return normalize(&ds);
 }
