@@ -3,18 +3,18 @@
 
 using namespace std;
 
-struct ha_array {
-    vector<vector<float>> data;
-};
+typedef vector<vector<float>> ha_array;
+
+typedef vector<uint8_t> buffer;
+
+typedef vector<vector<int>> indexarr;
 
 struct event {
     int x, y, p;
     float t;
 };
 
-struct stream {
-    vector<event> data;
-};
+typedef vector<event> stream;
 
 struct params {
     int R, K, width, height;
@@ -25,12 +25,8 @@ struct hats {
     int n_cells, width, height, dim;
     vector<ha_array> data [2];
     vector<stream> mc [2];
-    vector<vector<int>> *idx;
+    indexarr *idx;
     vector<int> evc [2];
-};
-
-struct buffer {
-    vector<uint8_t> data;
 };
 
 ha_array make_ha_array(int width, int height) {
@@ -38,10 +34,9 @@ ha_array make_ha_array(int width, int height) {
 
     for (int i = 0; i < width; i++) {
         vector<float> e;
-        out.data.push_back(e);
-        for (int j = 0; j < height; j++) {
-            out.data[i].push_back(0);
-        }
+        out.push_back(e);
+        for (int j = 0; j < height; j++)
+            out[i].push_back(0);
     }
     return out;
 }
@@ -61,7 +56,7 @@ vector<vector<int>> make_idx(int width, int height, int K) {
     return out;
 }
 
-hats make_hats(int n_cells, int width, int height, int dim, vector<vector<int>> *idx) {
+hats make_hats(int n_cells, int width, int height, int dim, indexarr *idx) {
     hats out = {};
     out.n_cells = n_cells;
     out.width = width;
@@ -75,10 +70,8 @@ hats make_hats(int n_cells, int width, int height, int dim, vector<vector<int>> 
         out.data[i] = data;
         out.mc[i] = mc;
 
-
-        for (int j = 0; j < n_cells; j++) { // needed ?
+        for (int j = 0; j < n_cells; j++) // needed ?
             out.data[i].push_back(make_ha_array(width, height));
-        }
     }
     return out;
 }

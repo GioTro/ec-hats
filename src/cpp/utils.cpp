@@ -24,13 +24,15 @@ stream preprocess(buffer in) {
     float unitconv = 1e-3;
 
     std::vector<int> group;
-    for (int i = 0; i < in.data.size(); i+=NBYTES) {
+    for (int i = 0; i < in.size(); i+=NBYTES) {
         int bits = 0;
         int x, y, p, t;
+        
         for (int j = 0; j < NBYTES; j++) {
-            bits |= in.data[i+j];
+            bits |= in[i+j];
             bits = bits<<8;
         }
+
         bits = bits>>8;
         x = (bits&x_address)>>32;
         y = (bits&y_address)>>24;
@@ -41,6 +43,7 @@ stream preprocess(buffer in) {
             multiple++;
             continue;
         }
+
         t += multiple*(1<<13);
 
         event e = {};
@@ -49,7 +52,7 @@ stream preprocess(buffer in) {
         e.y = y;
         e.p = p;
         e.t = ((float) t)*unitconv;
-        out.data.push_back(e);
+        out.push_back(e);
     }
     return out;
 }
