@@ -95,7 +95,7 @@ func compute_time_surface(e event, mce *[]event, prm *params, hst *[][]float32) 
 }
 
 func process(e event, prm *params, ds *histogram) {
-	var idx int = (*((*ds).idx))[e.x][e.y]
+	var idx = (*((*ds).idx))[e.x][e.y]
 	var mce *[]event = &((*(*ds).mc)[e.p][idx])
 
 	(*((*ds).evc))[e.p][idx]++ // increment by one, used later to normalize the cell
