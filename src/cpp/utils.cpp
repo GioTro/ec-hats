@@ -26,7 +26,7 @@ stream preprocess(buffer in) {
     for (int i = 0; i < in.size(); i+=NBYTES) {
         int bits = 0;
         int x, y, p, t;
-        
+
         for (int j = 0; j < NBYTES; j++) {
             bits |= in[i+j];
             bits = bits<<8;
