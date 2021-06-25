@@ -1,5 +1,4 @@
 #include <hats.h>
-using namespace std;
 
 
 /*******
