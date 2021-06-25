@@ -38,6 +38,8 @@ func sum(arr []float32) float32 {
 * Artifact of me not knowing golang all that well.
 *
 * Construct the svm and do some prediction, that is the final test anyway.
+* 
+* Clean up once confirmed everything is working.
 **/
 
 func main() {
